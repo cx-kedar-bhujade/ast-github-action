@@ -40,6 +40,10 @@ if [[ -n "$REGISTRIES" ]]; then
     auths_entries="${auths_entries%,}"
     echo "{\"auths\": {${auths_entries}}}" > /github/home/.config/containers/auth.json
     echo "✅ Auth.json created at /github/home/.config/containers/auth.json"
+    # 👀 Debug: show contents of auth.json
+    echo "------ AUTH.JSON CONTENT ------"
+    cat /github/home/.config/containers/auth.json
+    echo "-------------------------------"
 else
     echo "⚠️  No REGISTRIES specified, skipping auth.json creation."
 fi
