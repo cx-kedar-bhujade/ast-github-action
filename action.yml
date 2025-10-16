@@ -26,7 +26,7 @@ inputs:
     required: false
     default: ${{ github.token }}
     description: 'GitHub API Token'
-      global_params:
+  global_params:
     required: false
     default: ''
     description: 'Global parameters applied to all cx commands'
