@@ -99,10 +99,10 @@ scanId=(`grep -E '"(ID)":"((\\"|[^"])*)"' $output_file | cut -d',' -f1 | cut -d'
 echo "cxcli=$(cat $output_file | tr -d '\r\n')" >> $GITHUB_OUTPUT
 
 # Detect if customer manually set code-repository-url
-USER_CODE_REPO_URL=""
+USER_PROVIDED_CODE_REPO_URL=false
 for param in "${combined_utils_params[@]}"; do
-  if [[ "$param" == --code-repository-url* ]]; then
-    USER_CODE_REPO_URL="$param"
+  if [[ "$param" == "--code-repository-url" ]] || [[ "$param" == --code-repository-url=* ]]; then
+    USER_PROVIDED_CODE_REPO_URL=true
     break
   fi
 done
@@ -122,7 +122,7 @@ if [ -n "$scanId" ] && [ -n "${PR_NUMBER}" ]; then
   )
 
   # 1. If user manually provided --code-repository-url, use it exactly as-is
-  if [ -n "$USER_CODE_REPO_URL" ]; then
+  if [ "$USER_PROVIDED_CODE_REPO_URL" = true  ]; then
     echo "User provided custom --code-repository-url. Using it."
     # Don't add it again - it's already in combined_utils_params
 
