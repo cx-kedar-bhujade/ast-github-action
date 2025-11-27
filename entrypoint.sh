@@ -98,6 +98,7 @@ scanId=(`grep -E '"(ID)":"((\\"|[^"])*)"' $output_file | cut -d',' -f1 | cut -d'
 
 echo "cxcli=$(cat $output_file | tr -d '\r\n')" >> $GITHUB_OUTPUT
 
+combined_utils_params=("${global_arr[@]}" "${utils_arr[@]}")
 # Detect if customer manually set code-repository-url
 USER_PROVIDED_CODE_REPO_URL=false
 for param in "${combined_utils_params[@]}"; do
@@ -110,7 +111,6 @@ done
 if [ -n "$scanId" ] && [ -n "${PR_NUMBER}" ]; then
   echo "Creating PR decoration for scan ID: $scanId"
   # Combine global + utils-specific params
-  combined_utils_params=("${global_arr[@]}" "${utils_arr[@]}")
   # Build base command
   base_cmd=(
     /app/bin/cx utils pr github
