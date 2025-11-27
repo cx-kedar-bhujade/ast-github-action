@@ -109,7 +109,8 @@ done
 
 if [ -n "$scanId" ] && [ -n "${PR_NUMBER}" ]; then
   echo "Creating PR decoration for scan ID: $scanId"
-
+  # Combine global + utils-specific params
+  combined_utils_params=("${global_arr[@]}" "${utils_arr[@]}")
   # Build base command
   base_cmd=(
     /app/bin/cx utils pr github
@@ -123,7 +124,7 @@ if [ -n "$scanId" ] && [ -n "${PR_NUMBER}" ]; then
   # 1. If user manually provided --code-repository-url, use it exactly as-is
   if [ -n "$USER_CODE_REPO_URL" ]; then
     echo "User provided custom --code-repository-url. Using it."
-    base_cmd+=("$USER_CODE_REPO_URL")
+    # Don't add it again - it's already in combined_utils_params
 
   # 2. Else if on-prem server (IS_CLOUD=false), add our default on-prem URL
   elif [ "$IS_CLOUD" = false ]; then
@@ -135,7 +136,7 @@ if [ -n "$scanId" ] && [ -n "${PR_NUMBER}" ]; then
     echo "GitHub Cloud detected. No extra code-repository-url needed."
   fi
 
-  # Append remaining parameters
+  # Append ALL utils parameters (including user's custom params)
   base_cmd+=("${combined_utils_params[@]}")
 
   # Execute
