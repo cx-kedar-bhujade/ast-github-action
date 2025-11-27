@@ -43,6 +43,16 @@ else
     echo "⚠️  No REGISTRIES specified, skipping auth.json creation."
 fi
 
+echo "Server URL: $GITHUB_SERVER_URL"
+
+if [ "$GITHUB_SERVER_URL" = "https://github.com" ]; then
+    echo "Detected GitHub Cloud"
+    export IS_CLOUD=true
+else
+    echo "Detected GitHub Enterprise Server"
+    export IS_CLOUD=false
+fi
+
 # Parse global params (applied to all commands)
 if [ -n "${GLOBAL_PARAMS}" ]; then
   eval "global_arr=(${GLOBAL_PARAMS})"
@@ -88,11 +98,49 @@ scanId=(`grep -E '"(ID)":"((\\"|[^"])*)"' $output_file | cut -d',' -f1 | cut -d'
 
 echo "cxcli=$(cat $output_file | tr -d '\r\n')" >> $GITHUB_OUTPUT
 
+# Detect if customer manually set code-repository-url
+USER_CODE_REPO_URL=""
+for param in "${combined_utils_params[@]}"; do
+  if [[ "$param" == --code-repository-url* ]]; then
+    USER_CODE_REPO_URL="$param"
+    break
+  fi
+done
+
 if [ -n "$scanId" ] && [ -n "${PR_NUMBER}" ]; then
-  echo "Creating PR decoration for scan ID:" $scanId
-  # Combine global + utils-specific params
-  combined_utils_params=("${global_arr[@]}" "${utils_arr[@]}")
-  /app/bin/cx utils pr github --scan-id "${scanId}" --namespace "${NAMESPACE}" --repo-name "${REPO_NAME}" --pr-number "${PR_NUMBER}" --token "${GITHUB_TOKEN}" "${combined_utils_params[@]}"
+  echo "Creating PR decoration for scan ID: $scanId"
+
+  # Build base command
+  base_cmd=(
+    /app/bin/cx utils pr github
+    --scan-id "${scanId}"
+    --namespace "${NAMESPACE}"
+    --repo-name "${REPO_NAME}"
+    --pr-number "${PR_NUMBER}"
+    --token "${GITHUB_TOKEN}"
+  )
+
+  # 1. If user manually provided --code-repository-url, use it exactly as-is
+  if [ -n "$USER_CODE_REPO_URL" ]; then
+    echo "User provided custom --code-repository-url. Using it."
+    base_cmd+=("$USER_CODE_REPO_URL")
+
+  # 2. Else if on-prem server (IS_CLOUD=false), add our default on-prem URL
+  elif [ "$IS_CLOUD" = false ]; then
+    echo "Detected On-Prem GitHub. Adding default code-repository-url."
+    base_cmd+=(--code-repository-url "${GITHUB_SERVER_URL}")
+
+  # 3. Else Cloud → do nothing
+  else
+    echo "GitHub Cloud detected. No extra code-repository-url needed."
+  fi
+
+  # Append remaining parameters
+  base_cmd+=("${combined_utils_params[@]}")
+
+  # Execute
+  "${base_cmd[@]}"
+
 else
   echo "PR decoration not created."
 fi
